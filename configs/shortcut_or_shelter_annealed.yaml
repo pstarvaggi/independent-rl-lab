@@ -1,0 +1,89 @@
+config_schema_version: 2
+
+# Notebook 05 falsification/sensitivity study.  These two environments are
+# calibration-selected disagreement points: the exact greedy policy takes the corridor,
+# while the optimal persistent epsilon=.10-soft policy takes the shelter.
+# Annealing epsilon to zero tests whether the three tabular methods recover the
+# common greedy objective rather than treating "SARSA is safer" as a universal.
+experiment:
+  name: shortcut_or_shelter_annealed
+  # Required compatibility field; total_interaction_steps is the active budget.
+  episodes: 1
+  total_interaction_steps: 100000
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  snapshot_interval: 1000000
+  snapshot_step_interval: 2500
+  exact_reference: true
+  tags:
+    study: shortcut_or_shelter
+    analysis_role: annealed_exploration_sensitivity
+    research_question: do_methods_recover_a_common_greedy_objective
+    primary_endpoint: final_frozen_greedy_corridor_intention
+
+  environments:
+    - name: recoverable_disagreement_p0825
+      kind: risky_corridor
+      parameters:
+        corridor_reliability: 0.825
+        hazard_mode: recoverable
+        recoverable_hazard_penalty: -0.5
+        lethal_hazard_penalty: -8.0
+        goal_reward: 8.0
+        step_reward: -0.06
+        max_episode_steps: 250
+    - name: lethal_disagreement_p1000
+      kind: risky_corridor
+      parameters:
+        corridor_reliability: 1.0
+        hazard_mode: lethal
+        recoverable_hazard_penalty: -0.5
+        lethal_hazard_penalty: -8.0
+        goal_reward: 8.0
+        step_reward: -0.06
+        max_episode_steps: 250
+
+  agents:
+    - name: q_learning
+      kind: q_learning
+      parameters: &annealed_control
+        learning_rate: 0.05
+        gamma: 0.98
+        initial_q: 8.0
+        epsilon: {kind: linear, start: 0.20, end: 0.0, duration: 20000}
+    - name: sarsa
+      kind: sarsa
+      parameters: *annealed_control
+    - name: expected_sarsa
+      kind: expected_sarsa
+      parameters: *annealed_control
+
+policy_evaluation:
+  enabled: true
+  # With an interaction-step budget, intermediate learning dynamics come from
+  # Q snapshots.  This deliberately unreachable interval leaves only the final
+  # paired held-out panel and avoids an unbounded episode-indexed eval workload.
+  interval_episodes: 1000000
+  episodes_per_checkpoint: 25
+  include_initial: false
+  include_final: true
+  scenarios:
+    - name: frozen_greedy
+      policy_mode: greedy
+      seed_group: shortcut_or_shelter_deployment_panel
+    - name: continuing_behavior
+      policy_mode: behavior
+      seed_group: shortcut_or_shelter_deployment_panel
+
+execution:
+  parallel_workers: 4
+  failure_policy: continue
+
+artifacts:
+  output_dir: results
+  table_format: auto
+  flush_rows: 10000
+  save_q_snapshots: true
+  step_retention:
+    mode: none
+    keep_terminal: false
+    keep_events: false

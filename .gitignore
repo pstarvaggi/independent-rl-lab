@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.env
+.DS_Store
+.ipynb_checkpoints/
+build/
+dist/
+
+# Protocol-v2 runs and notebook execution artifacts are reproducible outputs.
+/results/**
+!/results/.gitkeep
+/notebooks/results/**
+/notebooks/executed/**
+/notebooks/*.executed.ipynb
+
+# Canonical /notebooks/*.ipynb files remain tracked, generated, and unexecuted.

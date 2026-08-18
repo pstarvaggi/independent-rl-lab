@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "independent-rl-lab"
+version = "0.1.0"
+description = "A transparent, reproducible laboratory for reinforcement-learning research."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "RL Lab contributors" }]
+dependencies = [
+  "gymnasium>=1.0,<2",
+  "matplotlib>=3.9,<4",
+  "numpy>=1.26,<2; platform_system == 'Darwin' and platform_machine == 'x86_64'",
+  "numpy>=2.0,<3; platform_system != 'Darwin' or platform_machine != 'x86_64'",
+  "pandas>=2.2,<3",
+  "pydantic>=2.8,<3",
+  "PyYAML>=6.0,<7",
+  "scipy>=1.14,<2",
+  "tqdm>=4.66,<5",
+  "typer>=0.12,<1",
+]
+
+[project.optional-dependencies]
+notebooks = [
+  "gymnasium[box2d]>=1.2.3,<2",
+  "ipykernel>=6.29,<7",
+  "ipywidgets>=8.1,<9",
+  "jupyterlab>=4.2,<5",
+  "torch>=2.2,<2.3; platform_system == 'Darwin' and platform_machine == 'x86_64'",
+  "torch>=2.4,<3; platform_system != 'Darwin' or platform_machine != 'x86_64'",
+]
+parquet = ["pyarrow>=17,<22"]
+dev = [
+  "hatchling>=1.25",
+  "mypy>=1.11,<2",
+  "nbclient>=0.10,<1",
+  "nbformat>=5.10,<6",
+  "pytest>=8.3,<10",
+  "pytest-cov>=5,<8",
+  "ruff>=0.6,<1",
+]
+
+[project.scripts]
+rl-lab = "rllab.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rllab"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["notebooks/*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+no_implicit_optional = true
+packages = ["rllab"]
+
+[tool.coverage.run]
+source = ["rllab"]
+branch = true

@@ -1,0 +1,90 @@
+config_schema_version: 2
+
+# Notebook 05, primary stationary study: a costly but nonterminal hazard band.
+# The exact greedy and epsilon=.10-soft route boundaries are approximately
+# p=.805983 and p=.847773, respectively.  The grid brackets both roots densely
+# while retaining a few broad-range anchors.
+experiment:
+  name: shortcut_or_shelter_recoverable
+  # Required compatibility field; total_interaction_steps is the active budget.
+  episodes: 1
+  total_interaction_steps: 100000
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  # Episode lengths differ by route, so publication progress snapshots are
+  # indexed by environment interactions, not episodes.
+  snapshot_interval: 1000000
+  snapshot_step_interval: 2500
+  exact_reference: true
+  tags:
+    study: shortcut_or_shelter
+    hazard_semantics: recoverable
+    research_question: learned_route_boundary_under_recoverable_risk
+    primary_endpoint: final_frozen_greedy_corridor_intention
+    training_estimand: finite_budget_100k_policy_distribution
+    exact_greedy_boundary: 0.805983
+    exact_epsilon_soft_boundary: 0.847773
+    epsilon_soft_corridor_at_p1: true
+
+  environment:
+    name: recoverable_risky_corridor
+    kind: risky_corridor
+    parameters:
+      corridor_reliability: 1.0  # Replaced by the sweep below.
+      hazard_mode: recoverable
+      recoverable_hazard_penalty: -0.5
+      lethal_hazard_penalty: -8.0
+      goal_reward: 8.0
+      step_reward: -0.06
+      max_episode_steps: 250
+
+  agents:
+    - name: q_learning
+      kind: q_learning
+      parameters: &persistent_control
+        learning_rate: 0.05
+        gamma: 0.98
+        # Route-neutral optimistic initialization is the declared coverage
+        # device: every state/action starts at the maximum terminal reward.
+        initial_q: 8.0
+        epsilon: 0.10
+    - name: sarsa
+      kind: sarsa
+      parameters: *persistent_control
+    - name: expected_sarsa
+      kind: expected_sarsa
+      parameters: *persistent_control
+
+  sweep:
+    environment.corridor_reliability:
+      [0.60, 0.70, 0.78, 0.79, 0.80, 0.805, 0.81, 0.82, 0.825, 0.835, 0.84, 0.845, 0.85, 0.855, 0.86, 0.88, 0.90, 1.00]
+
+policy_evaluation:
+  enabled: true
+  # With an interaction-step budget, intermediate learning dynamics come from
+  # Q snapshots.  This deliberately unreachable interval leaves only the final
+  # paired held-out panel and avoids an unbounded episode-indexed eval workload.
+  interval_episodes: 1000000
+  episodes_per_checkpoint: 25
+  include_initial: false
+  include_final: true
+  scenarios:
+    - name: frozen_greedy
+      policy_mode: greedy
+      seed_group: shortcut_or_shelter_deployment_panel
+    - name: continuing_behavior
+      policy_mode: behavior
+      seed_group: shortcut_or_shelter_deployment_panel
+
+execution:
+  parallel_workers: 4
+  failure_policy: continue
+
+artifacts:
+  output_dir: results
+  table_format: auto
+  flush_rows: 10000
+  save_q_snapshots: true
+  step_retention:
+    mode: none
+    keep_terminal: false
+    keep_events: false

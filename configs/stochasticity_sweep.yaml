@@ -1,0 +1,79 @@
+config_schema_version: 2
+
+# First research experiment: movement stochasticity versus Q-learning convergence.
+experiment:
+  name: q_learning_stochasticity
+  episodes: 2000
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  snapshot_interval: 20
+  exact_reference: true
+  tags:
+    research_question: environmental_stochasticity_and_tabular_convergence
+
+  environment:
+    name: corridor_maze
+    kind: stochastic_maze
+    parameters:
+      shape: [7, 9]
+      start: [6, 0]
+      goals: [[0, 8]]
+      blocked_cells:
+        - [1, 1]
+        - [1, 2]
+        - [1, 3]
+        - [1, 5]
+        - [1, 6]
+        - [1, 7]
+        - [3, 1]
+        - [3, 2]
+        - [3, 3]
+        - [3, 5]
+        - [3, 6]
+        - [3, 7]
+        - [5, 1]
+        - [5, 2]
+        - [5, 3]
+        - [5, 5]
+        - [5, 6]
+        - [5, 7]
+      action_reliability: 1.0
+      slip_weights: {left: 0.45, right: 0.45, stay: 0.10, backward: 0.0}
+      step_reward: -0.01
+      max_episode_steps: 300
+
+  agents:
+    - name: q_learning
+      kind: q_learning
+      parameters:
+        learning_rate: 0.10
+        gamma: 0.99
+        epsilon:
+          kind: exponential_decay
+          initial: 0.30
+          decay_rate: 0.9995
+          minimum: 0.02
+
+  sweep:
+    environment.action_reliability: [1.0, 0.95, 0.9, 0.8, 0.7, 0.6]
+
+policy_evaluation:
+  enabled: true
+  interval_episodes: 200
+  episodes_per_checkpoint: 5
+  include_initial: true
+  include_final: true
+
+execution:
+  parallel_workers: 4
+  failure_policy: continue
+
+artifacts:
+  output_dir: results
+  table_format: auto
+  flush_rows: 10000
+  save_q_snapshots: true
+  step_retention:
+    mode: sample
+    fraction: 0.05
+    keep_terminal: true
+    keep_events: true

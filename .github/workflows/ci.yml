@@ -1,0 +1,64 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install core development dependencies
+        run: python -m pip install -e ".[dev,parquet]"
+      - name: Check formatting
+        run: make format-check PYTHON=python
+      - name: Check generated notebook freshness
+        run: make notebooks-check PYTHON=python
+      - name: Lint
+        run: make lint PYTHON=python
+      - name: Check types
+        run: make typecheck PYTHON=python
+      - name: Run tests
+        run: make test PYTHON=python
+
+  native-macos:
+    name: Native macOS arm64 smoke
+    runs-on: macos-14
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Verify native architecture
+        run: python -c "import platform; assert platform.machine() == 'arm64', platform.machine()"
+      - name: Install development and notebook dependencies
+        run: python -m pip install -e ".[dev,notebooks,parquet]"
+      - name: Run core tests
+        run: python -m pytest -q --ignore=tests/test_notebooks.py
+      - name: Exercise native Box2D and SAC notebook workflow
+        run: >-
+          python -m pytest -q
+          tests/test_notebooks.py::test_lunar_lander_continuous_contract
+          tests/test_notebooks.py::test_lunar_lander_sac_smoke

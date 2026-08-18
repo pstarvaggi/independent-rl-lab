@@ -1,0 +1,69 @@
+config_schema_version: 2
+
+# Spatially heterogeneous control comparison: a short unreliable route versus a safe detour.
+experiment:
+  name: policies_under_risk
+  episodes: 3000
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  snapshot_interval: 25
+  exact_reference: true
+  tags:
+    research_question: backup_rules_under_spatial_risk
+    primary_endpoint: final_held_out_episode_return
+
+  environment:
+    name: risky_shortcut
+    kind: stochastic_maze
+    parameters:
+      shape: [5, 9]
+      start: [2, 0]
+      goals: [[2, 8]]
+      blocked_cells: [[0, 3], [0, 4], [0, 5], [4, 3], [4, 4], [4, 5]]
+      action_reliability: 0.98
+      state_reliability:
+        "2,3": 0.58
+        "2,4": 0.58
+        "2,5": 0.58
+      slip_weights: {left: 0.45, right: 0.45, stay: 0.10, backward: 0.0}
+      step_reward: -0.01
+      max_episode_steps: 250
+
+  agents:
+    - name: q_learning
+      kind: q_learning
+      parameters: &shared_control_parameters
+        learning_rate: 0.12
+        gamma: 0.98
+        epsilon: {kind: linear, start: 0.30, end: 0.03, duration: 60000}
+    - name: sarsa
+      kind: sarsa
+      parameters: *shared_control_parameters
+    - name: expected_sarsa
+      kind: expected_sarsa
+      parameters: *shared_control_parameters
+    - name: double_q_learning
+      kind: double_q_learning
+      parameters: *shared_control_parameters
+
+policy_evaluation:
+  enabled: true
+  interval_episodes: 250
+  episodes_per_checkpoint: 10
+  include_initial: true
+  include_final: true
+  scenarios:
+    - name: matched_training_environment
+
+execution:
+  parallel_workers: 4
+  failure_policy: continue
+
+artifacts:
+  output_dir: results
+  table_format: auto
+  flush_rows: 10000
+  save_q_snapshots: true
+  step_retention:
+    mode: none
+    keep_terminal: false
+    keep_events: false
