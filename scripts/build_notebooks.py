@@ -2956,7 +2956,7 @@ policies_under_risk_drift_memory = [
 ]
 
 
-shortcut_or_shelter = [
+_shortcut_or_shelter_raw_analysis = [
     md(r"""
     # Shortcut or shelter?
 
@@ -3421,17 +3421,51 @@ shortcut_or_shelter = [
             sort=False,
         )
 
+    def stream_training_integrity(
+        result: ExperimentResult,
+    ) -> tuple[pd.DataFrame, int]:
+        '''Reduce episode rows to one final observed-step count per trial.'''
+        final_steps: dict[str, int] = {}
+        row_count = 0
+        for batch in result.iter_table(
+            "training_episodes",
+            columns=("trial_id", "observed_step_count"),
+            batch_size=50_000,
+        ):
+            row_count += len(batch)
+            if batch.empty:
+                continue
+            if batch[["trial_id", "observed_step_count"]].isna().any().any():
+                raise ValueError("Training integrity columns contain missing values")
+            batch_final = batch.groupby("trial_id")["observed_step_count"].max()
+            for trial_id, observed_steps in batch_final.items():
+                key = str(trial_id)
+                final_steps[key] = max(final_steps.get(key, 0), int(observed_steps))
+        summary = pd.DataFrame(
+            sorted(final_steps.items()),
+            columns=["trial_id", "observed_step_count"],
+        )
+        return summary, row_count
+
     main_design = concatenate_tables(
         [trial_design(config) for config in main_configs.values()],
     )
+    training_integrity_parts = {
+        hazard_mode: stream_training_integrity(result)
+        for hazard_mode, result in main_results.items()
+    }
     main_training = concatenate_tables(
-        [result.training_episodes for result in main_results.values()],
+        [summary for summary, _ in training_integrity_parts.values()],
+    )
+    training_episode_row_count = sum(
+        row_count for _, row_count in training_integrity_parts.values()
     )
     main_evaluations = concatenate_tables(
         [result.evaluations for result in main_results.values()],
     )
     assert set(main_design["agent"]) == set(METHOD_ORDER)
     assert main_design["trial_id"].is_unique
+    assert main_training["trial_id"].is_unique
     assert set(main_evaluations["evaluation_policy_mode"]) == {"greedy", "behavior"}
     paired_panels = main_evaluations.pivot_table(
         index=["trial_id", "evaluation_episode"],
@@ -3440,16 +3474,28 @@ shortcut_or_shelter = [
         aggfunc="first",
     ).dropna()
     assert (paired_panels["greedy"] == paired_panels["behavior"]).all()
-    final_steps = main_training.groupby("trial_id")["observed_step_count"].max()
+    final_steps = main_training.set_index("trial_id")["observed_step_count"]
     expected_steps = {
         trial.trial_id: trial.total_interaction_steps
         for config in main_configs.values()
         for trial in config.trials()
     }
-    assert all(int(final_steps[trial_id]) == budget for trial_id, budget in expected_steps.items())
+    if not (SMOKE or QUICK):
+        assert set(expected_steps.values()) == {100_000}, (
+            "The publication design requires exactly 100,000 interactions per trial"
+        )
+    assert set(final_steps.index) == set(expected_steps), (
+        "Training rows do not cover the exact configured trial panel"
+    )
+    step_mismatches = {
+        trial_id: (int(final_steps[trial_id]), int(budget))
+        for trial_id, budget in expected_steps.items()
+        if int(final_steps[trial_id]) != int(budget)
+    }
+    assert not step_mismatches, f"Interaction-budget mismatches: {step_mismatches}"
     print(
-        "trials / training episodes / held-out episodes:",
-        len(main_design), len(main_training), len(main_evaluations),
+        "trials / streamed training episode rows / held-out episodes:",
+        len(main_design), training_episode_row_count, len(main_evaluations),
     )
     """),
     code("""
@@ -4471,6 +4517,280 @@ shortcut_or_shelter = [
     print("Canonical configs:")
     for path in (*FULL_CONFIG_PATHS.values(), REPO_ROOT / "configs" / "shortcut_or_shelter_annealed.yaml"):
         print(" -", path.relative_to(REPO_ROOT))
+    """),
+]
+
+
+shortcut_or_shelter = [
+    md(r"""
+    # Shortcut or shelter?
+
+    ## What three TD-control rules learn at a noisy route boundary
+
+    A short corridor reaches the goal quickly, but an execution error can enter
+    hazards above or below it. A longer southern route is protected by a wall.
+    We solve the route choice exactly, then compare it with 1,992 completed
+    training runs of Q-learning, SARSA, and Expected SARSA.
+
+    This is now a **results notebook**. It does not retrain the study and it does
+    not rescan the raw multi-gigabyte run store. `Run All` loads a small,
+    versioned evidence package produced once from the immutable Protocol-v2
+    artifacts. The raw-analysis program and run identifiers are listed at the
+    end.
+    """),
+    code("""
+    from __future__ import annotations
+
+    import json
+    from pathlib import Path
+
+    from IPython.display import SVG, Markdown, display
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+
+    from rllab.environments import RiskyCorridorEnv
+    from rllab.visualization import plot_maze
+
+    def find_repo_root(start: Path) -> Path:
+        for candidate in (start.resolve(), *start.resolve().parents):
+            if (candidate / "pyproject.toml").exists() and (candidate / "src" / "rllab").exists():
+                return candidate
+        raise FileNotFoundError("Run this notebook from inside the rl-lab repository.")
+
+    REPO_ROOT = find_repo_root(Path.cwd())
+    REPORT_DIR = REPO_ROOT / "reports" / "shortcut_or_shelter"
+    REQUIRED = (
+        "analysis_manifest.json",
+        "exact_thresholds.csv",
+        "final_choices.csv",
+        "corridor_summary.csv",
+        "final_boundary_summary.csv",
+        "boundary_contrasts.csv",
+        "stability_summary.csv",
+        "endpoint_calibration.csv",
+        "annealed_summary.csv",
+        "backup_variance.csv",
+        "route_selection.svg",
+        "mechanism_checks.svg",
+    )
+    missing = [name for name in REQUIRED if not (REPORT_DIR / name).is_file()]
+    if missing:
+        raise FileNotFoundError(
+            "The compact evidence package is incomplete: "
+            + ", ".join(missing)
+            + ". Rebuild it with the command in the final notebook section."
+        )
+
+    def load_csv(name: str) -> pd.DataFrame:
+        return pd.read_csv(REPORT_DIR / name)
+
+    analysis_manifest = json.loads((REPORT_DIR / "analysis_manifest.json").read_text())
+    exact_thresholds = load_csv("exact_thresholds.csv")
+    final_choices = load_csv("final_choices.csv")
+    corridor_summary = load_csv("corridor_summary.csv")
+    final_boundary_summary = load_csv("final_boundary_summary.csv")
+    boundary_contrasts = load_csv("boundary_contrasts.csv")
+    stability_summary = load_csv("stability_summary.csv")
+    endpoint_calibration = load_csv("endpoint_calibration.csv")
+    annealed_summary = load_csv("annealed_summary.csv")
+    backup_variance = load_csv("backup_variance.csv")
+
+    METHOD_LABELS = {
+        "q_learning": "Q-learning",
+        "sarsa": "SARSA",
+        "expected_sarsa": "Expected SARSA",
+    }
+    print(
+        f"Loaded {len(final_choices):,} primary policies and "
+        f"{int(annealed_summary['n_seeds'].sum()):,} summarized annealing seed-observations "
+        f"from {REPORT_DIR.relative_to(REPO_ROOT)}"
+    )
+    """),
+    md(r"""
+    ## 1. The world and the estimand
+
+    The fork is the start state. EAST expresses the corridor policy; SOUTH
+    expresses the shelter policy. Intended actions execute correctly with
+    probability $p$ and otherwise slip left or right with equal probability.
+    The same actuator noise applies on both routes; the wall changes the
+    consequences of a slip.
+
+    The exact start-state action gap is
+
+    $$
+    \Delta^*(p)=Q^*_p(s_0,\mathrm{EAST})-Q^*_p(s_0,\mathrm{SOUTH}).
+    $$
+
+    Its zero crossing is the model boundary. The learned estimand is different:
+    at each $p$, what fraction of 20 independent training seeds ends with EAST
+    as the unique greedy action? Ties, NORTH, and WEST remain visible as
+    `other`.
+    """),
+    code("""
+    diagram_env = RiskyCorridorEnv(
+        corridor_reliability=0.90,
+        hazard_mode="lethal",
+        recoverable_hazard_penalty=-0.50,
+        lethal_hazard_penalty=-8.0,
+    )
+    fig, ax = plt.subplots(figsize=(10.5, 4.2))
+    plot_maze(diagram_env, ax=ax, title="The exposed corridor and protected southern route")
+    ax.plot([0, 8], [1, 1], color="#D55E00", linewidth=3, alpha=0.72, label="corridor")
+    ax.plot([0, 0, 8, 8], [1, 3, 3, 1], color="#0072B2", linewidth=3, alpha=0.72, label="shelter")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.10), ncol=2, frameon=False)
+    plt.tight_layout()
+    plt.show()
+
+    threshold_view = exact_thresholds.copy()
+    threshold_view["objective"] = np.where(
+        threshold_view["epsilon"].eq(0.0), "greedy", "epsilon-soft"
+    )
+    display(
+        threshold_view.loc[
+            threshold_view["epsilon"].isin([0.0, 0.10]),
+            ["hazard_mode", "objective", "epsilon", "threshold", "gap_at_perfect_control"],
+        ]
+    )
+    """),
+    md(r"""
+    The recoverable penalty leaves a broad transition: the greedy model changes
+    route near $p=.806$, while the persistent-$\epsilon=.10$ continuation
+    policy changes near $p=.848$. With lethal hazards, repeated exposed moves
+    compress the greedy boundary near $p=.989$. The epsilon-soft model never
+    enters the corridor even at perfect actuation, because actuation noise and
+    deliberate exploration are different sources of risk.
+    """),
+    md(r"""
+    ## 2. Where the trained policies changed route
+
+    Every point below is a fraction of independent trained policies, not a
+    collection of episodes. The lines connect the pre-specified reliability
+    grid only as visual guides. Ribbons are 95% Wilson intervals. Vertical lines
+    are model calculations, not fits to the learned data.
+    """),
+    code("""
+    display(SVG(filename=str(REPORT_DIR / "route_selection.svg")))
+
+    boundary_table = final_boundary_summary.copy()
+    boundary_table["method"] = boundary_table["agent"].map(METHOD_LABELS)
+    boundary_table["target"] = np.where(
+        boundary_table["agent"].eq("q_learning"), "greedy", "epsilon-soft"
+    )
+    boundary_table = boundary_table.merge(
+        stability_summary.groupby(["hazard_mode", "agent"], as_index=False).agg(
+            max_final_quarter_change=("changed_fraction", "max")
+        ),
+        on=["hazard_mode", "agent"],
+        how="left",
+        validate="one_to_one",
+    )
+    display(
+        boundary_table[
+            [
+                "hazard_mode", "method", "target", "observed_half_boundary",
+                "ci_low", "ci_high", "right_censored_fraction",
+                "monotonicity_violations", "max_final_quarter_change",
+            ]
+        ]
+    )
+    display(boundary_contrasts)
+    """),
+    code("""
+    unresolved = final_choices.loc[final_choices["choice"].isin(["other", "tie"])]
+    choice_counts = (
+        final_choices.groupby(["hazard_mode", "agent", "choice"], as_index=False)
+        .size()
+        .rename(columns={"size": "seeds"})
+    )
+    display(choice_counts)
+    if len(unresolved):
+        display(
+            Markdown(
+                f"**Declared exception.** {len(unresolved)} of {len(final_choices):,} final "
+                "policies selected an off-route action or tie. It remains a third outcome "
+                "and is not recoded as shelter."
+            )
+        )
+        display(unresolved)
+    """),
+    md(r"""
+    ### Analysis amendment — 19 August 2026
+
+    The first executable validation check stopped if *any* final policy selected
+    NORTH, WEST, or a tie. It stopped on one WEST action among 1,920 primary
+    policies: lethal SARSA at $p=.990$, seed 10. WEST exceeded SOUTH by only
+    $0.00550$ in the learned Q table.
+
+    That all-or-nothing check conflicted with the declared three-outcome
+    estimand above. Before estimating the empirical boundaries, it was revised
+    to retain and report `other` and to fail only when unresolved actions exceed
+    20% within a condition. Here the maximum is 5% in one condition and 0%
+    elsewhere. The data, configurations, and training runs were not changed.
+    """),
+    md(r"""
+    ## 3. Does the difference survive when exploration disappears?
+
+    Q-learning values a greedy continuation. With persistent exploration,
+    SARSA and Expected SARSA value the epsilon-soft continuation actually being
+    followed. The smaller annealing study sends epsilon to zero, so the three
+    methods should move toward the same greedy choice at two points where the
+    persistent objectives disagree.
+
+    The right side of the figure isolates a second claim. Holding the state,
+    transition kernel, Q table, and epsilon-soft policy fixed, SARSA and Expected
+    SARSA have the same target mean. Expected SARSA integrates over the next
+    action and removes only that sampling component of target variance.
+    """),
+    code("""
+    display(SVG(filename=str(REPORT_DIR / "mechanism_checks.svg")))
+    display(annealed_summary)
+    display(backup_variance)
+    """),
+    md(r"""
+    ## 4. Checks and limits
+
+    All primary trials received exactly 100,000 interactions. The recoverable
+    panel contains 1,080 trials, the lethal panel 840, and the annealing check
+    72. Endpoint route choices passed their pre-specified 80/20 calibration,
+    and no endpoint seed changed route between 75,000 and 100,000 interactions.
+    Held-out greedy and continuing-behavior rollouts use paired environment
+    seeds, but repeated rollouts are measurements of one trained policy—not new
+    independent training replicates.
+
+    This study does not show that SARSA is universally safer or that Q-learning
+    is reckless. It shows how a continuation objective, a consequence law, and
+    a finite training budget meet at one exactly solvable route boundary.
+    """),
+    code("""
+    display(endpoint_calibration)
+    validation = {
+        key: analysis_manifest.get(key)
+        for key in (
+            "generated_at", "analysis_version", "run_ids", "primary_trial_count",
+            "sensitivity_trial_count", "quality_gates",
+        )
+        if key in analysis_manifest
+    }
+    display(pd.Series(validation, name="analysis record"))
+    """),
+    md(r"""
+    ## Rebuild the compact evidence package
+
+    Normal notebook use ends here. To audit or change the analysis, run the
+    standalone program below from the repository root. It reads the three
+    immutable run directories once and rewrites `reports/shortcut_or_shelter/`.
+
+    ```bash
+    python experiments/stochastic_maze/analyze_shortcut_or_shelter.py \
+      --recoverable-run results/shortcut_or_shelter_recoverable-dea8b3bb98-20260818T165653.284759Z \
+      --lethal-run results/shortcut_or_shelter_lethal-c224eb9e19-20260818T184221.884416Z \
+      --annealed-run results/shortcut_or_shelter_annealed-7a6ceda8a8-20260818T200356.410162Z
+    ```
+
+    The checked report manifest records those run identifiers, the analysis
+    source, the validation decisions, and every compact output used here and in
+    the accompanying article.
     """),
 ]
 

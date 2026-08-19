@@ -1,0 +1,13 @@
+hazard_mode,endpoint,reliability,agent,expected_corridor_fraction,observed_corridor_fraction,passes
+recoverable,min,0.6,q_learning,0,0,True
+recoverable,min,0.6,sarsa,0,0,True
+recoverable,min,0.6,expected_sarsa,0,0,True
+recoverable,max,1,q_learning,1,1,True
+recoverable,max,1,sarsa,1,1,True
+recoverable,max,1,expected_sarsa,1,1,True
+lethal,min,0.97,q_learning,0,0,True
+lethal,min,0.97,sarsa,0,0,True
+lethal,min,0.97,expected_sarsa,0,0,True
+lethal,max,1,q_learning,1,1,True
+lethal,max,1,sarsa,0,0,True
+lethal,max,1,expected_sarsa,0,0,True

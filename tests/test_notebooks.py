@@ -176,12 +176,18 @@ def test_shortcut_or_shelter_notebook_smoke(
 ) -> None:
     monkeypatch.setenv("MPLBACKEND", "Agg")
     monkeypatch.setenv("MPLCONFIGDIR", str(tmp_path / "matplotlib"))
-    monkeypatch.setenv("RL_LAB_NOTEBOOK_SMOKE", "1")
+    # Notebook 05 is a compact results notebook. Point the conventional raw-run
+    # location at an empty directory to keep this test honest: every cell must
+    # execute using only the checked report package.
     monkeypatch.setenv("RL_LAB_NOTEBOOK_RESULTS", str(tmp_path / "results"))
     notebook = nbformat.read(
         ROOT / "notebooks" / "05_shortcut_or_shelter.ipynb",
         as_version=4,
     )
+    code_source = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "code")
+    assert "RunStore" not in code_source
+    assert "q_snapshots" not in code_source
+
     namespace: dict[str, object] = {
         "__name__": "__main__",
         "display": lambda *_args, **_kwargs: None,
@@ -197,41 +203,67 @@ def test_shortcut_or_shelter_notebook_smoke(
                 namespace,
             )
 
-    main_design = namespace["main_design"]
-    main_training = namespace["main_training"]
-    main_evaluations = namespace["main_evaluations"]
+    analysis_manifest = namespace["analysis_manifest"]
     final_choices = namespace["final_choices"]
     exact_thresholds = namespace["exact_thresholds"]
-    annealed_choices = namespace["annealed_choices"]
+    final_boundary_summary = namespace["final_boundary_summary"]
+    annealed_summary = namespace["annealed_summary"]
     backup_variance = namespace["backup_variance"]
-    checkpoint_choices = namespace["checkpoint_choices"]
+    stability_summary = namespace["stability_summary"]
     endpoint_calibration = namespace["endpoint_calibration"]
     boundary_contrasts = namespace["boundary_contrasts"]
 
-    assert set(main_design["hazard_mode"]) == {"recoverable", "lethal"}
-    assert set(main_design["agent"]) == {
+    assert len(final_choices) == 1_920
+    assert final_choices["trial_id"].nunique() == 1_920
+    assert set(final_choices["hazard_mode"]) == {"recoverable", "lethal"}
+    assert set(final_choices["agent"]) == {
         "q_learning",
         "sarsa",
         "expected_sarsa",
     }
-    assert set(main_evaluations["evaluation_policy_mode"]) == {"greedy", "behavior"}
-    paired = main_evaluations.pivot_table(
-        index=["trial_id", "evaluation_episode"],
-        columns="evaluation_policy_mode",
-        values="evaluation_seed",
-        aggfunc="first",
-    ).dropna()
-    assert (paired["greedy"] == paired["behavior"]).all()
-    assert main_training.groupby("trial_id")["observed_step_count"].max().eq(80).all()
     assert set(final_choices["choice"]).issubset({"corridor", "shelter", "other", "tie"})
-    assert final_choices["exact_deployment_regret"].ge(0.0).all()
-    assert set(annealed_choices["hazard_mode"]) == {"recoverable", "lethal"}
-    assert checkpoint_choices["step_lag"].eq(0).all()
+    unresolved = final_choices["choice"].isin(["other", "tie"])
+    assert unresolved.sum() == 1
+    assert final_choices["unresolved"].sum() == 1
+
+    assert int(annealed_summary["n_seeds"].sum()) == 72
+    assert set(annealed_summary["hazard_mode"]) == {"recoverable", "lethal"}
+    assert set(annealed_summary["agent"]) == {
+        "q_learning",
+        "sarsa",
+        "expected_sarsa",
+    }
+
+    assert len(final_boundary_summary) == 6
+    assert set(final_boundary_summary["hazard_mode"]) == {"recoverable", "lethal"}
+    assert set(final_boundary_summary["agent"]) == {
+        "q_learning",
+        "sarsa",
+        "expected_sarsa",
+    }
     assert (
         backup_variance["sarsa_variance"] >= backup_variance["expected_sarsa_variance"] - 1e-12
     ).all()
     assert len(endpoint_calibration) == 12
+    assert endpoint_calibration["passes"].all()
     assert len(boundary_contrasts) == 4
+
+    endpoint_min = stability_summary.groupby("hazard_mode")["reliability"].transform("min")
+    endpoint_max = stability_summary.groupby("hazard_mode")["reliability"].transform("max")
+    endpoint_mask = stability_summary["reliability"].eq(endpoint_min) | stability_summary[
+        "reliability"
+    ].eq(endpoint_max)
+    assert stability_summary.loc[endpoint_mask, "changed_choice_fraction"].le(0.20).all()
+
+    quality_gates = analysis_manifest["quality_gates"]
+    assert quality_gates["unresolved_condition"]["passes"]
+    assert quality_gates["endpoint_calibration"]["passes"]
+    assert quality_gates["endpoint_last_quarter_stability"]["passes"]
+    assert quality_gates["held_out_truncation"]["truncated_episodes"] == 3
+
+    report_directory = namespace["REPORT_DIR"]
+    for figure_name in ("route_selection.svg", "mechanism_checks.svg"):
+        assert (report_directory / figure_name).stat().st_size > 0
 
     recoverable_greedy = exact_thresholds.query("hazard_mode == 'recoverable' and epsilon == 0.0")[
         "threshold"

@@ -103,6 +103,20 @@ versions, trial metadata, committed table shards, and Q snapshots travel
 together. Raw result directories are generated evidence and are intentionally
 ignored by Git; version the config and source that reproduce them.
 
+Protocol-v2 runs contain thousands of small shards. If the repository is inside
+an iCloud-synced Desktop or Documents folder, write large runs to a local,
+nonsynchronized volume so macOS cannot evict individual shards between training
+and analysis:
+
+```bash
+rl-lab run configs/stochasticity_sweep.yaml \
+  --output /path/to/local/rl-lab-results
+```
+
+For notebook-created runs, set `RL_LAB_NOTEBOOK_RESULTS` to the same local
+results root before starting Jupyter. An existing iCloud-backed run must be fully
+downloaded before its manifests and Parquet tables can be validated.
+
 If a run is interrupted or a configured `continue` policy leaves failed trials,
 retry only unfinished work against the same plan:
 
@@ -137,6 +151,13 @@ Read the notebooks in order:
    publication-shaped study: it locates exact and learned reliability boundaries
    for recoverable and lethal hazards, and distinguishes frozen-greedy deployment
    from continued epsilon-soft exploration.
+
+Notebook 05 is a results notebook. A normal **Run All** loads its checked compact
+tables and figures from `reports/shortcut_or_shelter/` in seconds; it neither
+retrains the agents nor scans the multi-gigabyte Protocol-v2 run directories.
+To rebuild that evidence package from the immutable raw runs, use the explicit
+standalone analysis command shown near the end of the notebook (and reproduced
+below after the three run commands).
 
 The full stationary risk comparison used by notebook 04 is also a versioned
 command-line experiment:
@@ -189,6 +210,16 @@ two conditions where the greedy and persistent-epsilon objectives disagree:
 ```bash
 rl-lab run configs/shortcut_or_shelter_annealed.yaml --dry-run
 rl-lab run configs/shortcut_or_shelter_annealed.yaml
+```
+
+Rebuild the compact Notebook 05 evidence package only when auditing the analysis
+or replacing one of those completed runs:
+
+```bash
+python experiments/stochastic_maze/analyze_shortcut_or_shelter.py \
+  --recoverable-run results/shortcut_or_shelter_recoverable-dea8b3bb98-20260818T165653.284759Z \
+  --lethal-run results/shortcut_or_shelter_lethal-c224eb9e19-20260818T184221.884416Z \
+  --annealed-run results/shortcut_or_shelter_annealed-7a6ceda8a8-20260818T200356.410162Z
 ```
 
 ### Notebook and generated-artifact policy

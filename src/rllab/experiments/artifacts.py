@@ -542,6 +542,7 @@ class RunStore:
     def __init__(self, run_directory: str | Path, manifest: RunManifest) -> None:
         self.run_directory = Path(run_directory).resolve()
         self._manifest = manifest
+        self._committed_attempt_cache: tuple[AttemptCommit, ...] | None = None
 
     @property
     def manifest(self) -> RunManifest:
@@ -616,6 +617,7 @@ class RunStore:
             }
         )
         atomic_write_json(self.run_directory / "manifest.json", self._manifest)
+        self._committed_attempt_cache = None
 
     @staticmethod
     def _derive_status(trials: Mapping[str, TrialManifestEntry]) -> str:
@@ -811,6 +813,9 @@ class RunStore:
     def committed_attempts(self) -> tuple[AttemptCommit, ...]:
         """Return selected successful attempts in deterministic trial order."""
 
+        if self._committed_attempt_cache is not None:
+            return self._committed_attempt_cache
+
         commits: list[AttemptCommit] = []
         for trial_id, entry in sorted(self._manifest.trials.items()):
             if entry.status != "succeeded" or entry.committed_attempt is None:
@@ -822,7 +827,8 @@ class RunStore:
             if commit.trial_id != trial_id:
                 raise ArtifactError(f"Selected commit does not belong to trial {trial_id}")
             commits.append(commit)
-        return tuple(commits)
+        self._committed_attempt_cache = tuple(commits)
+        return self._committed_attempt_cache
 
     def artifact_references(self, table: str) -> tuple[ArtifactReference, ...]:
         """Committed references for a logical table, excluding partial attempts."""

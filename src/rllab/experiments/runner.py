@@ -38,7 +38,6 @@ from rllab.experiments.config import (
     stable_identifier,
 )
 from rllab.experiments.observation import TabularObservationAdapter, latent_state_from_info
-from rllab.experiments.persistence import iter_table as iter_persisted_table
 from rllab.experiments.policy_evaluation import evaluate_policy
 from rllab.experiments.preflight import estimate_run
 from rllab.experiments.provenance import collect_provenance, value_sha256
@@ -69,6 +68,14 @@ class ExperimentResult:
     run_directory: Path | None
     metadata: dict[str, Any]
     _tables: dict[str, pd.DataFrame] = field(default_factory=dict, repr=False)
+    _store_handle: RunStore | None = field(default=None, init=False, repr=False)
+
+    def _store(self) -> RunStore:
+        if self.run_directory is None:
+            raise RuntimeError("This experiment result is not persisted")
+        if self._store_handle is None:
+            self._store_handle = RunStore.open(self.run_directory)
+        return self._store_handle
 
     @staticmethod
     def _canonical_table(name: str) -> str:
@@ -116,7 +123,7 @@ class ExperimentResult:
             if self.run_directory is None:
                 self._tables[canonical] = pd.DataFrame()
             else:
-                self._tables[canonical] = RunStore.open(self.run_directory).read_table(canonical)
+                self._tables[canonical] = self._store().read_table(canonical)
         return self._tables[canonical]
 
     def iter_table(
@@ -132,8 +139,7 @@ class ExperimentResult:
 
         canonical = self._canonical_table(name)
         if self.run_directory is not None:
-            yield from iter_persisted_table(
-                self.run_directory,
+            yield from self._store().iter_table(
                 canonical,
                 columns=columns,
                 filters=filters,
@@ -166,7 +172,7 @@ class ExperimentResult:
 
         if self.run_directory is None:
             raise RuntimeError("Q snapshots require a persisted experiment run")
-        return RunStore.open(self.run_directory).read_q_snapshots(
+        return self._store().read_q_snapshots(
             trial_id,
             keys=keys,
             verify=verify,

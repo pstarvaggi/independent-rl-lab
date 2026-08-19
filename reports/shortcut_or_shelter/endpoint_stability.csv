@@ -1,0 +1,13 @@
+hazard_mode,agent,reliability,changed_choice_fraction,changed_corridor_indicator_fraction,n_seeds,changed_fraction,condition_limit,passes
+recoverable,expected_sarsa,0.6,0,0,20,0,0.2,True
+recoverable,q_learning,0.6,0,0,20,0,0.2,True
+recoverable,sarsa,0.6,0,0,20,0,0.2,True
+recoverable,expected_sarsa,1,0,0,20,0,0.2,True
+recoverable,q_learning,1,0,0,20,0,0.2,True
+recoverable,sarsa,1,0,0,20,0,0.2,True
+lethal,expected_sarsa,0.97,0,0,20,0,0.2,True
+lethal,q_learning,0.97,0,0,20,0,0.2,True
+lethal,sarsa,0.97,0,0,20,0,0.2,True
+lethal,expected_sarsa,1,0,0,20,0,0.2,True
+lethal,q_learning,1,0,0,20,0,0.2,True
+lethal,sarsa,1,0,0,20,0,0.2,True

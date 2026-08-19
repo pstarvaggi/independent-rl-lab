@@ -1,0 +1,7 @@
+hazard_mode,agent,observed_half_boundary,monotonicity_violations,median_half_boundary,ci_low,ci_high,right_censored_fraction
+lethal,expected_sarsa,,0,,,,1
+lethal,q_learning,0.99875,0,0.99875,0.998333333333,0.998947368421,0
+lethal,sarsa,,0,,,,1
+recoverable,expected_sarsa,0.8525,1,0.852142857143,0.84,0.857,0
+recoverable,q_learning,0.8225,0,0.821666666667,0.815,0.829,0
+recoverable,sarsa,0.848,2,0.847857142857,0.84,0.85875625,0

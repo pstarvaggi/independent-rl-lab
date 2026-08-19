@@ -1,0 +1,12 @@
+hazard_mode,agent,choice,training_seeds
+lethal,expected_sarsa,shelter,280
+lethal,q_learning,corridor,24
+lethal,q_learning,shelter,256
+lethal,sarsa,other,1
+lethal,sarsa,shelter,279
+recoverable,expected_sarsa,corridor,112
+recoverable,expected_sarsa,shelter,248
+recoverable,q_learning,corridor,204
+recoverable,q_learning,shelter,156
+recoverable,sarsa,corridor,116
+recoverable,sarsa,shelter,244

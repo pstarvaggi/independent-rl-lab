@@ -1,0 +1,487 @@
+{
+  "amendment": "Analysis amendment \u2014 2026-08-19. The original executable gate stopped on any tied or off-route final action. It stopped on one WEST action among 1,920 stationary policies (lethal, SARSA, p=.99, seed 10). This conflicted with the declared three-outcome estimand. Before inspecting boundary estimates, the gate was revised to retain and report `other` and to fail only when unresolved actions exceed 20% within a method by reliability condition. This post-collection amendment is reported with every output.",
+  "analysis": "shortcut_or_shelter",
+  "analysis_schema_version": 1,
+  "analysis_source_sha256": "bb45edba721531c0ae758b29d3f04b5f31a89043b1400bd1f9b277f1bacab8a8",
+  "analysis_version": 1,
+  "artifacts": {
+    "annealed_choices.csv": {
+      "bytes": 12546,
+      "sha256": "252a979e677fa00912986229ddd0878a91c8050acada716753fb1a4b756bd192"
+    },
+    "annealed_summary.csv": {
+      "bytes": 492,
+      "sha256": "7ed488724cc435eb98d26b5cd39656a22b3876839c38e3680d32c09e4184e9c8"
+    },
+    "backup_variance.csv": {
+      "bytes": 245,
+      "sha256": "27cc8f0fc0a13958f1ec4a221a9d9d40722d52e6d4b1ae196a2ca5929d4a2354"
+    },
+    "boundary_bootstrap.csv": {
+      "bytes": 474441,
+      "sha256": "2868d9d54a81cb417a46d5b58a9e72f9e5c881a4173c386e964ccfc23822ea81"
+    },
+    "boundary_contrasts.csv": {
+      "bytes": 256,
+      "sha256": "7f68b59181edc34201e8339aceec0884d2038b0ebaa48a0b130794514d12926c"
+    },
+    "boundary_training.png": {
+      "bytes": 137414,
+      "sha256": "e86a5e2499c51cdadd5a41877108c023ce0b535aac65b2d5fe0ffc0969e49723"
+    },
+    "boundary_training.svg": {
+      "bytes": 76445,
+      "sha256": "757f269eac8e7e324e00f137576920454132d7f298890e562e0c572744439c35"
+    },
+    "checkpoint_choices.csv": {
+      "bytes": 852025,
+      "sha256": "a5d5bb3d1c046505205fa6c43f300d4617cc809352f94222b6904ff2877bd1a8"
+    },
+    "checkpoint_summary.csv": {
+      "bytes": 23416,
+      "sha256": "da341104d0111342d3286a682ea1734b8a39c7625af0dbfacd27a0baacceb7d3"
+    },
+    "choice_counts.csv": {
+      "bytes": 391,
+      "sha256": "f839f5ff938392b5ecd0986c7571b0b13d013de4b5baf1ebf9d7da0135f3fb16"
+    },
+    "consequences.png": {
+      "bytes": 411405,
+      "sha256": "c887d9be3393340ccc87e5305be2bc7ffd8c70c6aab2ac2afe7edfbae7e740cc"
+    },
+    "consequences.svg": {
+      "bytes": 169712,
+      "sha256": "a0ff3ea253acd62e5afc0e160eebcf48cae228ca08bec1ff8512cd5f0c3fd4f8"
+    },
+    "corridor_summary.csv": {
+      "bytes": 5378,
+      "sha256": "ef5b800b3c205d55fe366e07c2c140bff300745a9b6f79a5e0afd8ca184e66d0"
+    },
+    "endpoint_calibration.csv": {
+      "bytes": 537,
+      "sha256": "fa975f38653e49b317b34234b8ece1af73e0073fed476c70ac5ccd133cd0cfdf"
+    },
+    "endpoint_stability.csv": {
+      "bytes": 635,
+      "sha256": "488d8fdcddf771b14187fc530bf3e1bb9f6a5fae3427256e53ef4e8e9d9ee44a"
+    },
+    "evaluation_trial_summary.csv": {
+      "bytes": 476841,
+      "sha256": "9df1de3f135815e4e524baf79ced79b7f3247a7e4a0e1a642343506a1793485e"
+    },
+    "exact_oracle_curve.csv": {
+      "bytes": 78750,
+      "sha256": "7ecaa059823949f735926993be3334a60c4ec4de019ef8690e1ef92159cb376b"
+    },
+    "exact_thresholds.csv": {
+      "bytes": 299,
+      "sha256": "c3bdc3de8fcb8b8450f2dae90926d198cd77789d63cc0eccb5d33f59541666f7"
+    },
+    "exposure_summary.csv": {
+      "bytes": 15972,
+      "sha256": "c73d8cb2d373c2adfda30a595a42efbca2ef16bb73b19f75b4b08d81036dd0db"
+    },
+    "failure_summary.csv": {
+      "bytes": 10172,
+      "sha256": "d8a248e9515c81243b45aa27c91c247f74f31fb968f423c4e6f66f8d50915fe1"
+    },
+    "final_boundary_summary.csv": {
+      "bytes": 428,
+      "sha256": "f11a442ae03700f40e604d90fbe1ffc0cd7fcb0272f5dfbb70397f70e18ca53c"
+    },
+    "final_choices.csv": {
+      "bytes": 329511,
+      "sha256": "0861446ddf7c860557e1f0b331549af29f87474f18999c8975159417c31f8718"
+    },
+    "learned_boundaries.csv": {
+      "bytes": 832,
+      "sha256": "1eb5e6f479c4c6458f2a1679cbf2794caa2026a2a30649c55a2a5b07c94d77cb"
+    },
+    "mechanism_checks.png": {
+      "bytes": 96561,
+      "sha256": "3b6eedb147a7157a3ce5d55b8ba4c0744c6ad2fd8bfa5624a4f999410818bcc8"
+    },
+    "mechanism_checks.svg": {
+      "bytes": 72355,
+      "sha256": "2be31a08b02c5b53c83c8bd420fb8b1c9955ca8d08934e2f189314d6c8360ffe"
+    },
+    "oracle_gaps.png": {
+      "bytes": 136727,
+      "sha256": "357523280e14790c0448d6032d5df627facfe060ae242824ddad84410b898285"
+    },
+    "oracle_gaps.svg": {
+      "bytes": 76494,
+      "sha256": "11448a27241c044f124ab9fbf0f946512d7a06061e3608353164be6ea2ab7713"
+    },
+    "regret_summary.csv": {
+      "bytes": 9310,
+      "sha256": "e5dec2a60c2cccc638c339a538968fa3ac600b881b8100d8913d0b9ae6ee0f1a"
+    },
+    "return_summary.csv": {
+      "bytes": 15427,
+      "sha256": "9a7309a1cbac87ca86cc7230c29c8a3baa547f1e8a4d01e7f41374f71a0c63e1"
+    },
+    "route_selection.png": {
+      "bytes": 182756,
+      "sha256": "7695c84ce43cc58d926b29ca2f00bfc4efbbf4934d71d2b23ad72d268a3379c3"
+    },
+    "route_selection.svg": {
+      "bytes": 99842,
+      "sha256": "ef9be97dda4793389606457fa9b6f500db7690320d49bf57d85c029bdb3761a8"
+    },
+    "stability_summary.csv": {
+      "bytes": 3731,
+      "sha256": "08c426d347f99ddfab0d403c2896f50732861c5dd9912d11eb2efa7ce7cfd156"
+    },
+    "truncation_summary.csv": {
+      "bytes": 8900,
+      "sha256": "dd4821750f19f9129737fc81f53d8b03590baabd10d4d07cf4c091b959b84fce"
+    },
+    "unresolved_conditions.csv": {
+      "bytes": 4100,
+      "sha256": "1c6632b3a2cf97182fda19278c00553465396a2836c792a00370af03a480da28"
+    }
+  },
+  "boundary_contrasts": [
+    {
+      "ci_high": null,
+      "ci_low": null,
+      "comparison": "sarsa",
+      "complete_bootstrap_pairs": 0,
+      "hazard_mode": "lethal",
+      "median_boundary_shift_vs_q": null
+    },
+    {
+      "ci_high": null,
+      "ci_low": null,
+      "comparison": "expected_sarsa",
+      "complete_bootstrap_pairs": 0,
+      "hazard_mode": "lethal",
+      "median_boundary_shift_vs_q": null
+    },
+    {
+      "ci_high": 0.03952876984126981,
+      "ci_low": 0.015000000000000013,
+      "comparison": "sarsa",
+      "complete_bootstrap_pairs": 2000,
+      "hazard_mode": "recoverable",
+      "median_boundary_shift_vs_q": 0.026000000000000023
+    },
+    {
+      "ci_high": 0.03972532051282049,
+      "ci_low": 0.015000000000000013,
+      "comparison": "expected_sarsa",
+      "complete_bootstrap_pairs": 2000,
+      "hazard_mode": "recoverable",
+      "median_boundary_shift_vs_q": 0.030517857142857208
+    }
+  ],
+  "choice_counts": [
+    {
+      "agent": "expected_sarsa",
+      "choice": "shelter",
+      "hazard_mode": "lethal",
+      "training_seeds": 280
+    },
+    {
+      "agent": "q_learning",
+      "choice": "corridor",
+      "hazard_mode": "lethal",
+      "training_seeds": 24
+    },
+    {
+      "agent": "q_learning",
+      "choice": "shelter",
+      "hazard_mode": "lethal",
+      "training_seeds": 256
+    },
+    {
+      "agent": "sarsa",
+      "choice": "other",
+      "hazard_mode": "lethal",
+      "training_seeds": 1
+    },
+    {
+      "agent": "sarsa",
+      "choice": "shelter",
+      "hazard_mode": "lethal",
+      "training_seeds": 279
+    },
+    {
+      "agent": "expected_sarsa",
+      "choice": "corridor",
+      "hazard_mode": "recoverable",
+      "training_seeds": 112
+    },
+    {
+      "agent": "expected_sarsa",
+      "choice": "shelter",
+      "hazard_mode": "recoverable",
+      "training_seeds": 248
+    },
+    {
+      "agent": "q_learning",
+      "choice": "corridor",
+      "hazard_mode": "recoverable",
+      "training_seeds": 204
+    },
+    {
+      "agent": "q_learning",
+      "choice": "shelter",
+      "hazard_mode": "recoverable",
+      "training_seeds": 156
+    },
+    {
+      "agent": "sarsa",
+      "choice": "corridor",
+      "hazard_mode": "recoverable",
+      "training_seeds": 116
+    },
+    {
+      "agent": "sarsa",
+      "choice": "shelter",
+      "hazard_mode": "recoverable",
+      "training_seeds": 244
+    }
+  ],
+  "counts": {
+    "annealed_policies": 72,
+    "held_out_trial_summaries": 3840,
+    "stationary_policies": 1920,
+    "unresolved_stationary_policies": 1
+  },
+  "exact_thresholds": [
+    {
+      "epsilon": 0.0,
+      "gap_at_perfect_control": 0.37609281601527655,
+      "hazard_mode": "recoverable",
+      "threshold": 0.8059829871121675
+    },
+    {
+      "epsilon": 0.01,
+      "gap_at_perfect_control": 0.37843778898135394,
+      "hazard_mode": "recoverable",
+      "threshold": 0.8097793989684863
+    },
+    {
+      "epsilon": 0.1,
+      "gap_at_perfect_control": 0.39531857931408165,
+      "hazard_mode": "recoverable",
+      "threshold": 0.8477734904418153
+    },
+    {
+      "epsilon": 0.0,
+      "gap_at_perfect_control": 0.37609281601527655,
+      "hazard_mode": "lethal",
+      "threshold": 0.989135060804776
+    },
+    {
+      "epsilon": 0.01,
+      "gap_at_perfect_control": 0.3645162378011726,
+      "hazard_mode": "lethal",
+      "threshold": 0.9940857237106622
+    },
+    {
+      "epsilon": 0.1,
+      "gap_at_perfect_control": -0.41223871356747566,
+      "hazard_mode": "lethal",
+      "threshold": null
+    }
+  ],
+  "final_boundary_summary": [
+    {
+      "agent": "expected_sarsa",
+      "ci_high": null,
+      "ci_low": null,
+      "hazard_mode": "lethal",
+      "median_half_boundary": null,
+      "monotonicity_violations": 0,
+      "observed_half_boundary": null,
+      "right_censored_fraction": 1.0
+    },
+    {
+      "agent": "q_learning",
+      "ci_high": 0.9989473684210526,
+      "ci_low": 0.9983333333333333,
+      "hazard_mode": "lethal",
+      "median_half_boundary": 0.99875,
+      "monotonicity_violations": 0,
+      "observed_half_boundary": 0.99875,
+      "right_censored_fraction": 0.0
+    },
+    {
+      "agent": "sarsa",
+      "ci_high": null,
+      "ci_low": null,
+      "hazard_mode": "lethal",
+      "median_half_boundary": null,
+      "monotonicity_violations": 0,
+      "observed_half_boundary": null,
+      "right_censored_fraction": 1.0
+    },
+    {
+      "agent": "expected_sarsa",
+      "ci_high": 0.857,
+      "ci_low": 0.84,
+      "hazard_mode": "recoverable",
+      "median_half_boundary": 0.8521428571428571,
+      "monotonicity_violations": 1,
+      "observed_half_boundary": 0.8525,
+      "right_censored_fraction": 0.0
+    },
+    {
+      "agent": "q_learning",
+      "ci_high": 0.829,
+      "ci_low": 0.815,
+      "hazard_mode": "recoverable",
+      "median_half_boundary": 0.8216666666666667,
+      "monotonicity_violations": 0,
+      "observed_half_boundary": 0.8224999999999999,
+      "right_censored_fraction": 0.0
+    },
+    {
+      "agent": "sarsa",
+      "ci_high": 0.85875625,
+      "ci_low": 0.84,
+      "hazard_mode": "recoverable",
+      "median_half_boundary": 0.8478571428571429,
+      "monotonicity_violations": 2,
+      "observed_half_boundary": 0.848,
+      "right_censored_fraction": 0.0
+    }
+  ],
+  "gates": {
+    "all_diagnostics_clear": false,
+    "all_pass": true,
+    "all_primary_pass": true,
+    "complete_interaction_budgets": {
+      "passes": true,
+      "required_steps_per_trial": 100000,
+      "trials_checked": 1992
+    },
+    "endpoint_calibration": {
+      "passes": true
+    },
+    "endpoint_last_quarter_stability": {
+      "passes": true
+    },
+    "held_out_truncation": {
+      "blocking": false,
+      "evaluation_episodes": 96000,
+      "passes": false,
+      "role": "strict descriptive diagnostic, not a pre-specified publication gate",
+      "rule": "zero held-out episodes may reach the time limit",
+      "truncated_episodes": 3,
+      "truncation_rate": 3.125e-05
+    },
+    "paired_evaluation_seeds": {
+      "paired_panels_checked": 48000,
+      "passes": true
+    },
+    "unresolved_condition": {
+      "limit": 0.2,
+      "maximum_observed_rate": 0.05,
+      "passes": true
+    }
+  },
+  "generated_at": "2026-08-19T17:55:28.620605Z",
+  "primary_trial_count": 1920,
+  "quality_gates": {
+    "all_diagnostics_clear": false,
+    "all_pass": true,
+    "all_primary_pass": true,
+    "complete_interaction_budgets": {
+      "passes": true,
+      "required_steps_per_trial": 100000,
+      "trials_checked": 1992
+    },
+    "endpoint_calibration": {
+      "passes": true
+    },
+    "endpoint_last_quarter_stability": {
+      "passes": true
+    },
+    "held_out_truncation": {
+      "blocking": false,
+      "evaluation_episodes": 96000,
+      "passes": false,
+      "role": "strict descriptive diagnostic, not a pre-specified publication gate",
+      "rule": "zero held-out episodes may reach the time limit",
+      "truncated_episodes": 3,
+      "truncation_rate": 3.125e-05
+    },
+    "paired_evaluation_seeds": {
+      "paired_panels_checked": 48000,
+      "passes": true
+    },
+    "unresolved_condition": {
+      "limit": 0.2,
+      "maximum_observed_rate": 0.05,
+      "passes": true
+    }
+  },
+  "run_ids": {
+    "annealed": "shortcut_or_shelter_annealed-7a6ceda8a8-20260818T200356.410162Z",
+    "lethal": "shortcut_or_shelter_lethal-c224eb9e19-20260818T184221.884416Z",
+    "recoverable": "shortcut_or_shelter_recoverable-dea8b3bb98-20260818T165653.284759Z"
+  },
+  "sensitivity_trial_count": 72,
+  "settings": {
+    "bootstrap_resamples": 2000,
+    "environment": {
+      "goal_reward": 8.0,
+      "lethal_hazard_penalty": -8.0,
+      "max_episode_steps": 250,
+      "recoverable_hazard_penalty": -0.5,
+      "step_reward": -0.06
+    },
+    "gamma": 0.98,
+    "oracle_points": 301,
+    "persistent_epsilon": 0.1,
+    "unresolved_condition_limit": 0.2
+  },
+  "software": {
+    "matplotlib": "3.11.1",
+    "numpy": "2.5.2",
+    "pandas": "2.3.3",
+    "python": "3.12.13"
+  },
+  "source_runs": {
+    "annealed": {
+      "all_interaction_budgets_match": true,
+      "config_sha256": "d5492041cb7218fbb4b6ed3009c95c4e455d2f7c276da0cfc931e1a026803bfe",
+      "directory_name": "shortcut_or_shelter_annealed-7a6ceda8a8-20260818T200356.410162Z",
+      "experiment_name": "shortcut_or_shelter_annealed",
+      "manifest_sha256": "f171dd00356d4f9424c4d8891d93528e7728b7eac44f928938cd856b6427cfef",
+      "observed_steps_max": 100000,
+      "observed_steps_min": 100000,
+      "run_id": "shortcut_or_shelter_annealed-7a6ceda8a8-20260818T200356.410162Z",
+      "status": "complete",
+      "trial_count": 72
+    },
+    "lethal": {
+      "all_interaction_budgets_match": true,
+      "config_sha256": "3023557fa089e0f5a5e819a2df9b982d944f7a97f29e1aab58d9127c950e82d4",
+      "directory_name": "shortcut_or_shelter_lethal-c224eb9e19-20260818T184221.884416Z",
+      "experiment_name": "shortcut_or_shelter_lethal",
+      "manifest_sha256": "20b2f74601cd88689611bfa09167ab180d8412ef100c239bdde1170514eb32ab",
+      "observed_steps_max": 100000,
+      "observed_steps_min": 100000,
+      "run_id": "shortcut_or_shelter_lethal-c224eb9e19-20260818T184221.884416Z",
+      "status": "complete",
+      "trial_count": 840
+    },
+    "recoverable": {
+      "all_interaction_budgets_match": true,
+      "config_sha256": "c5f1412a8988a3eb9121507b7b80a957ed02b43225d070ad1edcc478d5987ad4",
+      "directory_name": "shortcut_or_shelter_recoverable-dea8b3bb98-20260818T165653.284759Z",
+      "experiment_name": "shortcut_or_shelter_recoverable",
+      "manifest_sha256": "e70a350870d3725910eb20b62edd8eda4b59ecd3bb529e4c41497c9f2b17b3a4",
+      "observed_steps_max": 100000,
+      "observed_steps_min": 100000,
+      "run_id": "shortcut_or_shelter_recoverable-dea8b3bb98-20260818T165653.284759Z",
+      "status": "complete",
+      "trial_count": 1080
+    }
+  }
+}

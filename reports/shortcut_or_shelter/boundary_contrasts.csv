@@ -1,0 +1,5 @@
+hazard_mode,comparison,median_boundary_shift_vs_q,ci_low,ci_high,complete_bootstrap_pairs
+lethal,sarsa,,,,0
+lethal,expected_sarsa,,,,0
+recoverable,sarsa,0.026,0.015,0.0395287698413,2000
+recoverable,expected_sarsa,0.0305178571429,0.015,0.0397253205128,2000

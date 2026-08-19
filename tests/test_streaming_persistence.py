@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from rllab.experiments import artifacts
 from rllab.experiments.artifacts import (
     ArtifactIntegrityError,
     RunStore,
@@ -87,6 +88,43 @@ def test_q_snapshot_reader_rejects_unknown_keys_and_uncommitted_attempts(tmp_pat
         store.read_q_snapshots("committed", keys=("episode_99999999",))
     with pytest.raises(RuntimeError, match="no committed Q snapshots"):
         store.read_q_snapshots("pending")
+
+
+def test_run_store_caches_selected_commits_for_repeated_snapshot_reads(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = RunStore.create(
+        tmp_path / "run-cache",
+        run_id="run-cache",
+        experiment_name="snapshot-cache",
+        trials={"trial-1": {}},
+        config={},
+        provenance={},
+        table_format="csv",
+    )
+    writer = store.start_attempt("trial-1")
+    writer.write_q_snapshots(
+        {
+            "global_step_000000000001": np.zeros((2, 2)),
+            "global_step_000000000002": np.ones((2, 2)),
+        }
+    )
+    store.record_commit(writer.commit())
+
+    original = artifacts.load_attempt_commit
+    calls = 0
+
+    def counted_load(path: Path):
+        nonlocal calls
+        calls += 1
+        return original(path)
+
+    monkeypatch.setattr(artifacts, "load_attempt_commit", counted_load)
+    store.read_q_snapshots("trial-1", keys=("global_step_000000000001",))
+    store.read_q_snapshots("trial-1", keys=("global_step_000000000002",))
+
+    assert calls == 1
 
 
 def test_uncommitted_parts_are_invisible_and_reconcile_recovers_commit(tmp_path: Path) -> None:

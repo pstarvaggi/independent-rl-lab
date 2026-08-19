@@ -1,0 +1,3 @@
+hazard_mode,reliability,target_mean,expected_sarsa_variance,sarsa_variance,next_action_sampling_component
+recoverable,0.825,4.92308281766,0.00879576288118,0.0154268731018,0.00663111022064
+lethal,1,5.11030665359,0,0.0381500166583,0.0381500166583
